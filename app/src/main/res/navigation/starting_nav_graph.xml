@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/starting_nav_graph"
+    app:startDestination="@id/initialFragment">
+
+    <include app:graph="@navigation/feature_nav_graph" />
+
+    <fragment
+        android:id="@+id/initialFragment"
+        android:name="uk.co.diegobarle.hiltnavigationtest.ui.main.InitialFragment">
+        <action
+            android:id="@+id/action_initialFragment_to_firstFragment"
+            app:destination="@id/feature_nav_graph"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+</navigation>
