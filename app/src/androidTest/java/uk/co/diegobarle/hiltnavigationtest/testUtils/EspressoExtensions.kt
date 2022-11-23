@@ -8,8 +8,11 @@ import androidx.annotation.StyleRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.util.Preconditions
 import androidx.fragment.app.Fragment
-import androidx.test.core.app.ActivityScenario
 import androidx.fragment.testing.R
+import androidx.lifecycle.ViewModelStore
+import androidx.navigation.Navigation
+import androidx.navigation.testing.TestNavHostController
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.PerformException
 import androidx.test.espresso.UiController
@@ -21,37 +24,6 @@ import org.hamcrest.Matcher
 import uk.co.diegobarle.hiltnavigationtest.TestActivity
 import java.util.concurrent.TimeoutException
 
-//inline fun <reified T : Fragment> launchFragmentInTestContainer(
-//    fragmentArgs: Bundle? = null,
-//    @StyleRes themeResId: Int = R.style.FragmentScenarioEmptyFragmentActivityTheme,
-//    crossinline action: Fragment.() -> Unit = {}
-//): ActivityScenario<TestActivity> {
-//    val startActivityIntent = Intent.makeMainActivity(
-//        ComponentName(
-//            ApplicationProvider.getApplicationContext(),
-//            TestActivity::class.java
-//        )
-//    ).putExtra(
-//        "androidx.fragment.app.testing.FragmentScenario.EmptyFragmentActivity.THEME_EXTRAS_BUNDLE_KEY",
-//        themeResId
-//    )
-//
-//    return ActivityScenario.launch<TestActivity>(startActivityIntent).onActivity { activity ->
-//        val fragment: Fragment = activity.supportFragmentManager.fragmentFactory.instantiate(
-//            Preconditions.checkNotNull(T::class.java.classLoader),
-//            T::class.java.name
-//        )
-//        fragment.arguments = fragmentArgs
-//        activity.supportFragmentManager
-//            .beginTransaction()
-//            .add(android.R.id.content, fragment, "")
-//            .commitNow()
-//
-//        fragment.action()
-//
-//    }
-//}
-
 /**
  * Launch a Fragment of type T with Bundle fragmentArgs inside our TestActivity. It also gets the
  * ViewModel of type VM from the viewmodels factory, storing it in the ViewModelWrapper.
@@ -59,11 +31,13 @@ import java.util.concurrent.TimeoutException
 inline fun <reified T : Fragment> launchFragmentInTestContainer(
     fragmentArgs: Bundle? = null,
     @StyleRes themeResId: Int = R.style.FragmentScenarioEmptyFragmentActivityTheme,
+    navigationGraphResId: Int? = null,
     crossinline action: Fragment.() -> Unit = {}
 ): ActivityScenario<TestActivity> {
     return launchFragmentInSpecificContainer<T, TestActivity>(
         fragmentArgs,
         themeResId,
+        navigationGraphResId,
         action
     )
 }
@@ -77,6 +51,7 @@ inline fun <reified T : Fragment> launchFragmentInTestContainer(
 inline fun <reified T : Fragment, reified U : AppCompatActivity> launchFragmentInSpecificContainer(
     fragmentArgs: Bundle? = null,
     @StyleRes themeResId: Int = R.style.FragmentScenarioEmptyFragmentActivityTheme,
+    navigationGraphResId: Int? = null,
     crossinline action: Fragment.() -> Unit = {}
 ): ActivityScenario<U> {
     val startActivityIntent = Intent.makeMainActivity(
@@ -90,10 +65,22 @@ inline fun <reified T : Fragment, reified U : AppCompatActivity> launchFragmentI
     )
 
     return ActivityScenario.launch<U>(startActivityIntent).onActivity { activity ->
+        val navController = TestNavHostController(ApplicationProvider.getApplicationContext())
+        navController.setViewModelStore(ViewModelStore())
+
         val fragment: Fragment = activity.supportFragmentManager.fragmentFactory.instantiate(
             Preconditions.checkNotNull(T::class.java.classLoader),
             T::class.java.name
-        )
+        ).also { fragment ->
+            if (navigationGraphResId != null) {
+                fragment.viewLifecycleOwnerLiveData.observeForever { viewLifecycleOwner ->
+                    if (viewLifecycleOwner != null) {
+                        navController.setGraph(navigationGraphResId)
+                        Navigation.setViewNavController(fragment.requireView(), navController)
+                    }
+                }
+            }
+        }
 
         activity.supportFragmentManager
             .beginTransaction()

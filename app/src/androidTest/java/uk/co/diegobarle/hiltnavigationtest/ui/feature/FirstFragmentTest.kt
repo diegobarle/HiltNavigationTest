@@ -59,7 +59,9 @@ class FirstFragmentTest {
      */
     @Test
     fun test_feature_ui_and_click_on_button() = runBlockingTest {
-        launchFragmentInTestContainer<FirstFragment>()
+        launchFragmentInTestContainer<FirstFragment>(
+            navigationGraphResId = R.navigation.feature_nav_graph
+        )
 
         Espresso.onView(ViewMatchers.isRoot())
             .perform(waitId(R.id.main, WAIT_TIMEOUT))
@@ -68,9 +70,11 @@ class FirstFragmentTest {
             .check(
                 ViewAssertions.matches(
                     CoreMatchers.allOf(
-                ViewMatchers.withText("First Fragment"),
-                ViewMatchers.isDisplayed()
-            )))
+                        ViewMatchers.withText("First Fragment"),
+                        ViewMatchers.isDisplayed()
+                    )
+                )
+            )
 
         Espresso.onView(ViewMatchers.withId(R.id.et1))
             .perform(ViewActions.replaceText("Hello world"), ViewActions.closeSoftKeyboard())
@@ -79,9 +83,11 @@ class FirstFragmentTest {
             .check(
                 ViewAssertions.matches(
                     CoreMatchers.allOf(
-                ViewMatchers.withText("Go to Fragment 2"),
-                ViewMatchers.isDisplayed()
-            )))
+                        ViewMatchers.withText("Go to Fragment 2"),
+                        ViewMatchers.isDisplayed()
+                    )
+                )
+            )
 
         Espresso.onView(ViewMatchers.withId(R.id.btn1))
             .perform(ViewActions.click())
